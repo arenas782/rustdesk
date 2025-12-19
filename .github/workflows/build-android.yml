@@ -227,15 +227,11 @@ jobs:
           path: ~/.cargo/bin
           key: cargo-bin-android-${{ env.RUST_VERSION }}-${{ env.CARGO_NDK_VERSION }}
 
-      - name: Cache rustup targets
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.rustup/toolchains/${{ env.RUST_VERSION }}-x86_64-unknown-linux-gnu/lib/rustlib/aarch64-linux-android
-          key: rustup-target-${{ env.RUST_VERSION }}-aarch64-linux-android
-
       - name: Setup Rust Android target
-        run: rustup target add aarch64-linux-android
+        run: |
+          if ! rustup target list --installed | grep -q aarch64-linux-android; then
+            rustup target add aarch64-linux-android
+          fi
 
       - name: Install cargo-ndk
         run: |
