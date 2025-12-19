@@ -63,6 +63,10 @@ object EnterpriseConfig {
             FFI.startService()
             Log.i(TAG, "Network service started")
 
+            // Restart rendezvous connection to apply new server config
+            FFI.restartRendezvous()
+            Log.i(TAG, "Rendezvous connection restarted with new config")
+
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize enterprise config: ${e.message}")
         }
