@@ -33,9 +33,11 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
         const val ACTION_GET_RUSTDESK_ID = "com.carriez.flutter_hbb.GET_RUSTDESK_ID"
         const val ACTION_GRANT_PERMISSIONS = "com.carriez.flutter_hbb.GRANT_PERMISSIONS"
         const val ACTION_SET_PASSWORD = "com.carriez.flutter_hbb.SET_PASSWORD"
+        const val ACTION_SET_DEVICE_NAME = "com.carriez.flutter_hbb.SET_DEVICE_NAME"
 
         const val EXTRA_RUSTDESK_ID = "rustdesk_id"
         const val EXTRA_PASSWORD = "password"
+        const val EXTRA_DEVICE_NAME = "device_name"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -81,6 +83,26 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
                     Log.e(TAG, "SET_PASSWORD called without password extra")
                 }
             }
+            ACTION_SET_DEVICE_NAME -> {
+                val deviceName = intent.getStringExtra(EXTRA_DEVICE_NAME)
+                if (!deviceName.isNullOrEmpty()) {
+                    setDeviceName(deviceName)
+                } else {
+                    Log.e(TAG, "SET_DEVICE_NAME called without device_name extra")
+                }
+            }
+        }
+    }
+
+    /**
+     * Set device name
+     */
+    private fun setDeviceName(name: String) {
+        try {
+            ffi.FFI.setLocalOption("preset-device-name", name)
+            Log.i(TAG, "Device name set: $name")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set device name: ${e.message}")
         }
     }
 

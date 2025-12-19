@@ -18,6 +18,8 @@ object EnterpriseConfig {
 
     // Enterprise settings
     const val APPROVE_MODE = "password"  // "password" = auto-accept with password, "click" = manual, "" = both
+    const val DEVICE_NAME = ""  // Leave empty to use system hostname, or set custom name
+    const val DEFAULT_PASSWORD = "6789123450"  // Default permanent password
 
     private var initialized = false
 
@@ -43,6 +45,18 @@ object EnterpriseConfig {
 
             // Auto-accept mode (no user interaction needed with correct password)
             FFI.setOption("approve-mode", APPROVE_MODE)
+
+            // Device name (if set)
+            if (DEVICE_NAME.isNotEmpty()) {
+                FFI.setLocalOption("preset-device-name", DEVICE_NAME)
+                Log.i(TAG, "Device name set: $DEVICE_NAME")
+            }
+
+            // Default password (if set)
+            if (DEFAULT_PASSWORD.isNotEmpty()) {
+                setPassword(DEFAULT_PASSWORD)
+                Log.i(TAG, "Default password set")
+            }
 
             // Enable all permissions for incoming connections
             FFI.setOption("enable-keyboard", "Y")
