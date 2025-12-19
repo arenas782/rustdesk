@@ -28,4 +28,5 @@ object FFI {
     external fun setOption(key: String, value: String)
     external fun onClipboardUpdate(clips: ByteBuffer)
     external fun isServiceClipboardEnabled(): Boolean
+    external fun getMyId(): String
 }

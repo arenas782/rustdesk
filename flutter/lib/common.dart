@@ -2813,12 +2813,18 @@ class ServerConfig {
   late String apiServer;
   late String key;
 
+  // Enterprise hardcoded defaults
+  static const String enterpriseIdServer = "rustdesk.cleverty.app";
+  static const String enterpriseRelayServer = "rustdesk.cleverty.app";
+  static const String enterpriseApiServer = "https://rustdesk.cleverty.app";
+  static const String enterpriseKey = "R8zlNg4TEv9rbPYND8+odNkqcdVtXhE3mpvTg+DVm5I=";
+
   ServerConfig(
       {String? idServer, String? relayServer, String? apiServer, String? key}) {
-    this.idServer = idServer?.trim() ?? '';
-    this.relayServer = relayServer?.trim() ?? '';
-    this.apiServer = apiServer?.trim() ?? '';
-    this.key = key?.trim() ?? '';
+    this.idServer = idServer?.trim().isNotEmpty == true ? idServer!.trim() : enterpriseIdServer;
+    this.relayServer = relayServer?.trim().isNotEmpty == true ? relayServer!.trim() : enterpriseRelayServer;
+    this.apiServer = apiServer?.trim().isNotEmpty == true ? apiServer!.trim() : enterpriseApiServer;
+    this.key = key?.trim().isNotEmpty == true ? key!.trim() : enterpriseKey;
   }
 
   /// decode from shared string (from user shared or rustdesk-server generated)
@@ -2854,12 +2860,20 @@ class ServerConfig {
         .join();
   }
 
-  /// from local options
+  /// from local options (with enterprise defaults)
   ServerConfig.fromOptions(Map<String, dynamic> options)
-      : idServer = options['custom-rendezvous-server'] ?? "",
-        relayServer = options['relay-server'] ?? "",
-        apiServer = options['api-server'] ?? "",
-        key = options['key'] ?? "";
+      : idServer = (options['custom-rendezvous-server']?.toString().isNotEmpty == true)
+            ? options['custom-rendezvous-server']
+            : enterpriseIdServer,
+        relayServer = (options['relay-server']?.toString().isNotEmpty == true)
+            ? options['relay-server']
+            : enterpriseRelayServer,
+        apiServer = (options['api-server']?.toString().isNotEmpty == true)
+            ? options['api-server']
+            : enterpriseApiServer,
+        key = (options['key']?.toString().isNotEmpty == true)
+            ? options['key']
+            : enterpriseKey;
 }
 
 Widget dialogButton(String text,

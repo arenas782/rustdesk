@@ -85,7 +85,7 @@ object EnterpriseConfig {
      */
     fun getRustDeskId(): String {
         return try {
-            val id = FFI.getLocalOption("id")
+            val id = FFI.getMyId()
             if (id.isNotEmpty()) id else "pending"
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get RustDesk ID: ${e.message}")

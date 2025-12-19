@@ -44,8 +44,13 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
         when (intent.action) {
             ACTION_ENTERPRISE_SETUP -> {
                 // Full setup - do everything
+                // 1. Grant all permissions via root first
+                grantAllPermissionsViaRoot(context)
+                // 2. Enable accessibility service
                 enableAccessibilityService(context)
+                // 3. Enable start on boot
                 enableStartOnBoot(context)
+                // 4. Start the service
                 startMainService(context)
                 val id = getRustDeskId()
                 Log.i(TAG, "Enterprise setup complete. RustDesk ID: $id")
@@ -66,7 +71,7 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
                 setResultData(id)
             }
             ACTION_GRANT_PERMISSIONS -> {
-                grantPermissionsViaShell(context)
+                grantAllPermissionsViaRoot(context)
             }
             ACTION_SET_PASSWORD -> {
                 val password = intent.getStringExtra(EXTRA_PASSWORD)
@@ -156,9 +161,16 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
 
     /**
      * Start the main RustDesk service
+     * Grants PROJECT_MEDIA via root first, then starts service
      */
     private fun startMainService(context: Context) {
         try {
+            // Grant MediaProjection permission via root
+            val packageName = context.packageName
+            executeRootCommand("appops set $packageName PROJECT_MEDIA allow")
+            Log.i(TAG, "PROJECT_MEDIA granted via root")
+
+            // Start the service
             val serviceIntent = Intent(context, MainService::class.java).apply {
                 action = ACT_INIT_MEDIA_PROJECTION_AND_SERVICE
             }
@@ -209,5 +221,78 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
 
         // Note: Actually executing these requires root shell access
         // Your device owner app should call these via Runtime.exec() with su
+    }
+
+    /**
+     * Grant ALL permissions via root shell commands
+     * This executes the commands directly using su
+     */
+    private fun grantAllPermissionsViaRoot(context: Context) {
+        val packageName = context.packageName
+
+        // All permissions to grant
+        val permissions = listOf(
+            // Storage
+            "android.permission.READ_EXTERNAL_STORAGE",
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            // Audio
+            "android.permission.RECORD_AUDIO",
+            // Overlay
+            "android.permission.SYSTEM_ALERT_WINDOW",
+            // Battery
+            "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+            // Notifications (Android 13+)
+            "android.permission.POST_NOTIFICATIONS",
+            // Secure settings (for accessibility)
+            "android.permission.WRITE_SECURE_SETTINGS",
+            // Screen capture without MediaProjection (system app)
+            "android.permission.CAPTURE_VIDEO_OUTPUT",
+            "android.permission.CAPTURE_SECURE_VIDEO_OUTPUT",
+            "android.permission.READ_FRAME_BUFFER"
+        )
+
+        Log.i(TAG, "Granting all permissions via root for $packageName")
+
+        // Grant each permission
+        for (permission in permissions) {
+            executeRootCommand("pm grant $packageName $permission")
+        }
+
+        // Disable battery optimization
+        executeRootCommand("dumpsys deviceidle whitelist +$packageName")
+
+        // Grant overlay permission via appops
+        executeRootCommand("appops set $packageName SYSTEM_ALERT_WINDOW allow")
+
+        // MediaProjection - auto-approve via appops
+        executeRootCommand("appops set $packageName PROJECT_MEDIA allow")
+
+        Log.i(TAG, "All permissions granted")
+    }
+
+    /**
+     * Execute a command with root (su)
+     */
+    private fun executeRootCommand(command: String): Boolean {
+        return try {
+            Log.d(TAG, "Executing: $command")
+            val process = Runtime.getRuntime().exec("su")
+            val outputStream = process.outputStream
+            outputStream.write("$command\n".toByteArray())
+            outputStream.write("exit\n".toByteArray())
+            outputStream.flush()
+            outputStream.close()
+            val exitCode = process.waitFor()
+            if (exitCode == 0) {
+                Log.d(TAG, "Command succeeded: $command")
+                true
+            } else {
+                Log.w(TAG, "Command failed with exit code $exitCode: $command")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to execute command: $command - ${e.message}")
+            false
+        }
     }
 }
