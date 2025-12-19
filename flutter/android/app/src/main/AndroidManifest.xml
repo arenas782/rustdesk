@@ -14,6 +14,13 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Enterprise deployment permissions - grant via device owner or root -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- For bypassing MediaProjection consent with system signature -->
+    <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT" />
+    <uses-permission android:name="android.permission.CAPTURE_SECURE_VIDEO_OUTPUT" />
+    <uses-permission android:name="android.permission.READ_FRAME_BUFFER" />
 
     <queries>
         <intent>
@@ -39,6 +46,22 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <!--ACTION_BOOT_COMPLETED for debug test on no root device-->
                 <action android:name="com.carriez.flutter_hbb.DEBUG_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Enterprise Setup Receiver - for unattended deployment -->
+        <receiver
+            android:name=".EnterpriseSetupReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.carriez.flutter_hbb.ENTERPRISE_SETUP" />
+                <action android:name="com.carriez.flutter_hbb.ENABLE_ACCESSIBILITY" />
+                <action android:name="com.carriez.flutter_hbb.ENABLE_START_ON_BOOT" />
+                <action android:name="com.carriez.flutter_hbb.START_SERVICE" />
+                <action android:name="com.carriez.flutter_hbb.GET_RUSTDESK_ID" />
+                <action android:name="com.carriez.flutter_hbb.GRANT_PERMISSIONS" />
+                <action android:name="com.carriez.flutter_hbb.SET_PASSWORD" />
             </intent-filter>
         </receiver>
 
@@ -93,6 +116,13 @@
         <service
             android:name=".FloatingWindowService"
             android:enabled="true" />
+
+        <!-- Enterprise Content Provider for RustDesk ID retrieval -->
+        <provider
+            android:name=".EnterpriseContentProvider"
+            android:authorities="com.carriez.flutter_hbb.provider"
+            android:exported="true"
+            android:grantUriPermissions="true" />
 
         <!--
  Don't delete the meta-data below.
