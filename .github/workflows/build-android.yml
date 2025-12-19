@@ -2,6 +2,15 @@ name: Android Build (arm64)
 
 on:
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'What to build'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - flutter-only
 
 env:
   RUST_VERSION: "1.75"
@@ -12,6 +21,7 @@ env:
 
 jobs:
   generate-bridge:
+    if: github.event.inputs.build_type == 'full'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
@@ -29,6 +39,14 @@ jobs:
         with:
           channel: "stable"
           flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-cache-${{ hashFiles('flutter/pubspec.lock') }}
+          restore-keys: pub-cache-
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@v1
@@ -51,7 +69,7 @@ jobs:
           flutter_rust_bridge_codegen --rust-input ../src/flutter_ffi.rs --dart-output lib/generated_bridge.dart --class-name RustdeskImpl
 
       - name: Upload bridge files
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: bridge-artifact
           path: |
@@ -60,7 +78,8 @@ jobs:
             ./flutter/lib/generated_bridge.dart
             ./flutter/lib/generated_bridge.freezed.dart
 
-  build-android-arm64:
+  build-rust:
+    if: github.event.inputs.build_type == 'full'
     needs: [generate-bridge]
     runs-on: ubuntu-24.04
     steps:
@@ -99,23 +118,19 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-
-      - name: Patch flutter
-        run: |
-          cd $(dirname $(dirname $(which flutter)))
-          git apply ${{ github.workspace }}/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff
-
       - name: Setup NDK
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: ${{ env.NDK_VERSION }}
           add-to-path: true
+          link-to-sdk: true
+
+      - name: Cache Android NDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.setup-ndk.outputs.ndk-path }}
+          key: android-ndk-${{ env.NDK_VERSION }}
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -135,7 +150,7 @@ jobs:
           fi
 
       - name: Restore bridge files
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v4
         with:
           name: bridge-artifact
           path: ./
@@ -160,6 +175,106 @@ jobs:
           cargo install cargo-ndk --version ${{ env.CARGO_NDK_VERSION }} --locked
           ./flutter/ndk_arm64.sh
 
+      - name: Upload Rust library
+        uses: actions/upload-artifact@v4
+        with:
+          name: librustdesk-arm64
+          path: ./target/aarch64-linux-android/release/liblibrustdesk.so
+
+  build-flutter:
+    needs: [build-rust]
+    if: always() && (github.event.inputs.build_type == 'full' && needs.build-rust.result == 'success' || github.event.inputs.build_type == 'flutter-only')
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+          cache-path: "${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:"
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            flutter/.dart_tool
+          key: pub-cache-${{ hashFiles('flutter/pubspec.lock') }}
+          restore-keys: |
+            pub-cache-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('flutter/android/**/*.gradle*', 'flutter/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-
+
+      - name: Patch flutter
+        run: |
+          cd $(dirname $(dirname $(which flutter)))
+          git apply ${{ github.workspace }}/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff
+
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: ${{ env.NDK_VERSION }}
+          add-to-path: true
+          link-to-sdk: true
+
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/sdk
+            /usr/local/lib/android/sdk/build-tools
+            /usr/local/lib/android/sdk/platform-tools
+            /usr/local/lib/android/sdk/platforms
+          key: android-sdk-${{ env.NDK_VERSION }}
+          restore-keys: android-sdk-
+
+      - name: Download Rust library (full build)
+        if: github.event.inputs.build_type == 'full'
+        uses: actions/download-artifact@v4
+        with:
+          name: librustdesk-arm64
+          path: ./rust-lib/
+
+      - name: Download bridge files (full build)
+        if: github.event.inputs.build_type == 'full'
+        uses: actions/download-artifact@v4
+        with:
+          name: bridge-artifact
+          path: ./
+
+      - name: Download artifacts (flutter-only from previous run)
+        if: github.event.inputs.build_type == 'flutter-only'
+        run: |
+          mkdir -p ./rust-lib
+          # Download Rust library from previous workflow run
+          gh run download --name librustdesk-arm64 --dir ./rust-lib || {
+            echo "ERROR: No cached Rust library found!"
+            echo "You need to run a 'full' build first."
+            exit 1
+          }
+          # Download bridge files from previous workflow run
+          gh run download --name bridge-artifact --dir ./ || {
+            echo "ERROR: No cached bridge files found!"
+            echo "You need to run a 'full' build first."
+            exit 1
+          }
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Build Flutter APK
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
@@ -168,13 +283,14 @@ jobs:
           export PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
 
           mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
-          cp ./target/aarch64-linux-android/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
+          cp ./rust-lib/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/
 
           # Use debug signing for CI
           sed -i "s/signingConfigs.release/signingConfigs.debug/g" ./flutter/android/app/build.gradle
 
           cd flutter
+          flutter pub get
           flutter build apk --release --target-platform android-arm64 --split-per-abi
 
       - name: Upload APK
