@@ -118,19 +118,32 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Cache Android NDK
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: /opt/android-ndk
+          key: android-ndk-${{ env.NDK_VERSION }}-linux
+
       - name: Setup NDK
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: ${{ env.NDK_VERSION }}
           add-to-path: true
-          link-to-sdk: true
 
-      - name: Cache Android NDK
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.setup-ndk.outputs.ndk-path }}
-          key: android-ndk-${{ env.NDK_VERSION }}
+      - name: Move NDK to cached location
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /opt/android-ndk
+          cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/* /opt/android-ndk/
+
+      - name: Set NDK environment
+        run: |
+          echo "ANDROID_NDK_HOME=/opt/android-ndk" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=/opt/android-ndk" >> $GITHUB_ENV
+          echo "/opt/android-ndk" >> $GITHUB_PATH
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -138,6 +151,19 @@ jobs:
           vcpkgDirectory: /opt/artifacts/vcpkg
           vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
           doNotCache: false
+
+      - name: Cache vcpkg installed packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            /opt/artifacts/vcpkg/installed
+            /opt/artifacts/vcpkg/buildtrees
+            /opt/artifacts/vcpkg/packages
+            ~/.cache/vcpkg
+          key: vcpkg-android-arm64-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-android-arm64-${{ env.VCPKG_COMMIT_ID }}-
+            vcpkg-android-arm64-
 
       - name: Install vcpkg dependencies
         run: |
@@ -167,9 +193,6 @@ jobs:
           prefix-key: rustdesk-android-arm64
 
       - name: Build Rust library
-        env:
-          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-          ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
           rustup target add aarch64-linux-android
           cargo install cargo-ndk --version ${{ env.CARGO_NDK_VERSION }} --locked
@@ -229,24 +252,31 @@ jobs:
           cd $(dirname $(dirname $(which flutter)))
           git apply ${{ github.workspace }}/.github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff
 
+      - name: Cache Android NDK
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: /opt/android-ndk
+          key: android-ndk-${{ env.NDK_VERSION }}-linux
+
       - name: Setup NDK
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: ${{ env.NDK_VERSION }}
           add-to-path: true
-          link-to-sdk: true
 
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.android/sdk
-            /usr/local/lib/android/sdk/build-tools
-            /usr/local/lib/android/sdk/platform-tools
-            /usr/local/lib/android/sdk/platforms
-          key: android-sdk-${{ env.NDK_VERSION }}
-          restore-keys: android-sdk-
+      - name: Move NDK to cached location
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /opt/android-ndk
+          cp -r ${{ steps.setup-ndk.outputs.ndk-path }}/* /opt/android-ndk/
+
+      - name: Set NDK environment
+        run: |
+          echo "ANDROID_NDK_HOME=/opt/android-ndk" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=/opt/android-ndk" >> $GITHUB_ENV
 
       - name: Download Rust library (full build)
         if: github.event.inputs.build_type == 'full'
@@ -282,12 +312,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Build Flutter APK
-        env:
-          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
           mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
           cp ./rust-lib/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
-          cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/
+          cp /opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/
 
           # Use debug signing for CI
           sed -i "s/signingConfigs.release/signingConfigs.debug/g" ./flutter/android/app/build.gradle
