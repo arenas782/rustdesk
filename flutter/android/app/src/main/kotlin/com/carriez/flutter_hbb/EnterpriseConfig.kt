@@ -59,6 +59,10 @@ object EnterpriseConfig {
             initialized = true
             Log.i(TAG, "Enterprise config initialized: server=$RENDEZVOUS_SERVER, approve-mode=$APPROVE_MODE")
 
+            // Start the network service to connect to rendezvous server
+            FFI.startService()
+            Log.i(TAG, "Network service started")
+
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize enterprise config: ${e.message}")
         }
