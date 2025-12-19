@@ -24,6 +24,8 @@ object FFI {
     external fun setFrameRawEnable(name: String, value: Boolean)
     external fun setCodecInfo(info: String)
     external fun getLocalOption(key: String): String
+    external fun setLocalOption(key: String, value: String)
+    external fun setOption(key: String, value: String)
     external fun onClipboardUpdate(clips: ByteBuffer)
     external fun isServiceClipboardEnabled(): Boolean
 }

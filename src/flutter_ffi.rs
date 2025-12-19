@@ -2869,6 +2869,36 @@ pub mod server_side {
     }
 
     #[no_mangle]
+    pub unsafe extern "system" fn Java_ffi_FFI_setLocalOption(
+        env: JNIEnv,
+        _class: JClass,
+        key: JString,
+        value: JString,
+    ) {
+        let mut env = env;
+        if let (Ok(key), Ok(value)) = (env.get_string(&key), env.get_string(&value)) {
+            let key: String = key.into();
+            let value: String = value.into();
+            super::set_local_option(key, value);
+        }
+    }
+
+    #[no_mangle]
+    pub unsafe extern "system" fn Java_ffi_FFI_setOption(
+        env: JNIEnv,
+        _class: JClass,
+        key: JString,
+        value: JString,
+    ) {
+        let mut env = env;
+        if let (Ok(key), Ok(value)) = (env.get_string(&key), env.get_string(&value)) {
+            let key: String = key.into();
+            let value: String = value.into();
+            super::set_option(key, value);
+        }
+    }
+
+    #[no_mangle]
     pub unsafe extern "system" fn Java_ffi_FFI_isServiceClipboardEnabled(
         env: JNIEnv,
         _class: JClass,

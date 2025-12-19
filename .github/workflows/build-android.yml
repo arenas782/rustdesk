@@ -308,6 +308,15 @@ jobs:
           key: android-build-${{ github.sha }}
           restore-keys: android-build-
 
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/platforms
+            /usr/local/lib/android/sdk/build-tools
+          key: android-sdk-${{ hashFiles('flutter/android/app/build.gradle') }}
+          restore-keys: android-sdk-
+
       - name: Patch flutter
         run: |
           cd $(dirname $(dirname $(which flutter)))
