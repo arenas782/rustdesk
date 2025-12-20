@@ -52,6 +52,13 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Enterprise: Always enable start on boot
+        getSharedPreferences(KEY_SHARED_PREFERENCES, MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_START_ON_BOOT_OPT, true)
+            .apply()
+
         if (MainService.isReady) {
             Intent(activity, MainService::class.java).also {
                 bindService(it, serviceConnection, Context.BIND_AUTO_CREATE)
