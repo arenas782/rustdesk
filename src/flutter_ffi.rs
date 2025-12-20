@@ -2809,15 +2809,43 @@ pub mod server_side {
     ) {
         log::debug!("startServer from jvm");
         let mut env = env;
+
+        // Set app directory
         if let Ok(app_dir) = env.get_string(&app_dir) {
             *config::APP_DIR.write().unwrap() = app_dir.into();
         }
+
+        // Load custom client config
         if let Ok(custom_client_config) = env.get_string(&custom_client_config) {
             if !custom_client_config.is_empty() {
                 let custom_client_config: String = custom_client_config.into();
                 crate::read_custom_client(&custom_client_config);
+            } else {
+                crate::load_custom_client();
             }
+        } else {
+            crate::load_custom_client();
         }
+
+        // Initialize logging (same as Flutter's initialize())
+        #[cfg(debug_assertions)]
+        android_logger::init_once(
+            android_logger::Config::default()
+                .with_max_level(log::LevelFilter::Debug)
+                .with_tag("ffi"),
+        );
+        #[cfg(not(debug_assertions))]
+        hbb_common::init_log(false, "");
+
+        // Global initialization
+        let _ = crate::common::global_init();
+
+        // Test NAT type in background
+        std::thread::spawn(|| {
+            crate::common::test_nat_type();
+        });
+
+        // Start server
         std::thread::spawn(move || start_server(true));
     }
 
