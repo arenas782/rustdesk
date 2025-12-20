@@ -323,14 +323,8 @@ jobs:
           key: gradle-${{ hashFiles('flutter/android/**/*.gradle*', 'flutter/android/**/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
-      - name: Cache Android build
-        uses: actions/cache@v4
-        with:
-          path: |
-            flutter/build
-            flutter/android/app/build
-          key: android-build-${{ github.sha }}
-          restore-keys: android-build-
+      # Removed: Android build cache was causing resource merge issues
+      # The build directory is cleaned before each build anyway
 
       - name: Cache Android SDK
         uses: actions/cache@v4
@@ -417,7 +411,11 @@ jobs:
           # Use debug signing for CI
           sed -i "s/signingConfigs.release/signingConfigs.debug/g" ./flutter/android/app/build.gradle
 
+          # Clean build to avoid resource merge issues
           cd flutter
+          flutter clean
+          rm -rf android/.gradle android/app/build build
+
           flutter pub get
           flutter build apk --release --target-platform android-arm64 --split-per-abi
 
