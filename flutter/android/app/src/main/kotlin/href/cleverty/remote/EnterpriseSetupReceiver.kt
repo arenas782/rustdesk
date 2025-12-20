@@ -48,12 +48,16 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
                 // Full setup - do everything
                 // 1. Grant all permissions via root first
                 grantAllPermissionsViaRoot(context)
-                // 2. Enable accessibility service
-                enableAccessibilityService(context)
-                // 3. Enable start on boot
+                // 2. Enable start on boot
                 enableStartOnBoot(context)
-                // 4. Start the service
+                // 3. Start the service first (app process must be running for accessibility to bind)
                 startMainService(context)
+                // 4. Wait for service to start
+                Thread.sleep(2000)
+                // 5. Enable accessibility service (system will bind since app is now running)
+                enableAccessibilityService(context)
+                // 6. Wait for accessibility to bind
+                Thread.sleep(1000)
                 val id = getRemoteId()
                 Log.i(TAG, "Enterprise setup complete. Cleverty Remote ID: $id")
                 setResultData(id)
