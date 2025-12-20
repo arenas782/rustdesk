@@ -67,6 +67,18 @@ jobs:
           cache-all-crates: true
           cache-on-failure: true
 
+      - name: Cache cargo git dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/git/db
+            ~/.cargo/git/checkouts
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+          key: cargo-git-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            cargo-git-
+
       - name: Cache cargo bin
         uses: actions/cache@v4
         with:
@@ -227,6 +239,18 @@ jobs:
           cache-all-crates: true
           cache-on-failure: true
           shared-key: android-arm64
+
+      - name: Cache cargo git dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/git/db
+            ~/.cargo/git/checkouts
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+          key: cargo-git-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            cargo-git-
 
       - name: Cache cargo bin
         uses: actions/cache@v4
