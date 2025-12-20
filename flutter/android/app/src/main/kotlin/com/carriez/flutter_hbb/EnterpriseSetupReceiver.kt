@@ -95,12 +95,16 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
     }
 
     /**
-     * Set device name
+     * Set device name and restart rendezvous to apply
+     * Uses setOption (not setLocalOption) because sync.rs reads from Config::get_option()
      */
     private fun setDeviceName(name: String) {
         try {
-            ffi.FFI.setLocalOption("preset-device-name", name)
+            ffi.FFI.setOption("preset-device-name", name)
             Log.i(TAG, "Device name set: $name")
+            // Restart rendezvous to send new name to server
+            ffi.FFI.restartRendezvous()
+            Log.i(TAG, "Rendezvous restarted to apply new device name")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set device name: ${e.message}")
         }
