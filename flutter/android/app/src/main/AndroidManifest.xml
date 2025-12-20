@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.carriez.flutter_hbb">
+    package="href.cleverty.remote">
 
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -32,7 +32,7 @@
     <application
         android:name=".MainApplication"
         android:icon="@mipmap/ic_launcher"
-        android:label="RustDesk"
+        android:label="Cleverty Remote"
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true">
@@ -45,7 +45,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <!--ACTION_BOOT_COMPLETED for debug test on no root device-->
-                <action android:name="com.carriez.flutter_hbb.DEBUG_BOOT_COMPLETED" />
+                <action android:name="href.cleverty.remote.DEBUG_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 
@@ -55,13 +55,14 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.carriez.flutter_hbb.ENTERPRISE_SETUP" />
-                <action android:name="com.carriez.flutter_hbb.ENABLE_ACCESSIBILITY" />
-                <action android:name="com.carriez.flutter_hbb.ENABLE_START_ON_BOOT" />
-                <action android:name="com.carriez.flutter_hbb.START_SERVICE" />
-                <action android:name="com.carriez.flutter_hbb.GET_RUSTDESK_ID" />
-                <action android:name="com.carriez.flutter_hbb.GRANT_PERMISSIONS" />
-                <action android:name="com.carriez.flutter_hbb.SET_PASSWORD" />
+                <action android:name="href.cleverty.remote.ENTERPRISE_SETUP" />
+                <action android:name="href.cleverty.remote.ENABLE_ACCESSIBILITY" />
+                <action android:name="href.cleverty.remote.ENABLE_START_ON_BOOT" />
+                <action android:name="href.cleverty.remote.START_SERVICE" />
+                <action android:name="href.cleverty.remote.GET_RUSTDESK_ID" />
+                <action android:name="href.cleverty.remote.GRANT_PERMISSIONS" />
+                <action android:name="href.cleverty.remote.SET_PASSWORD" />
+                <action android:name="href.cleverty.remote.SET_DEVICE_NAME" />
             </intent-filter>
         </receiver>
 
@@ -69,7 +70,7 @@
             android:name=".InputService"
             android:enabled="true"
             android:exported="false"
-            android:label="RustDesk Input"
+            android:label="Cleverty Remote Input"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -117,10 +118,10 @@
             android:name=".FloatingWindowService"
             android:enabled="true" />
 
-        <!-- Enterprise Content Provider for RustDesk ID retrieval -->
+        <!-- Enterprise Content Provider for Cleverty Remote ID retrieval -->
         <provider
             android:name=".EnterpriseContentProvider"
-            android:authorities="com.carriez.flutter_hbb.provider"
+            android:authorities="href.cleverty.remote.provider"
             android:exported="true"
             android:grantUriPermissions="true" />
 

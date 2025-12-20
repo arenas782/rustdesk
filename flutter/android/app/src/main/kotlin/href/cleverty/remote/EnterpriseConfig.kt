@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package href.cleverty.remote
 
 import android.util.Log
 import ffi.FFI
@@ -99,14 +99,14 @@ object EnterpriseConfig {
     }
 
     /**
-     * Get current RustDesk ID
+     * Get current Cleverty Remote ID
      */
-    fun getRustDeskId(): String {
+    fun getCleverty RemoteId(): String {
         return try {
             val id = FFI.getMyId()
             if (id.isNotEmpty()) id else "pending"
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get RustDesk ID: ${e.message}")
+            Log.e(TAG, "Failed to get Cleverty Remote ID: ${e.message}")
             "error"
         }
     }

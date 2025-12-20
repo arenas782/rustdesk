@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package href.cleverty.remote
 
 /**
  * Handle remote input and dispatch android gesture

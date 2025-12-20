@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package href.cleverty.remote
 
 import android.content.ContentProvider
 import android.content.ContentValues
@@ -10,10 +10,10 @@ import android.util.Log
 
 /**
  * Content Provider for enterprise integration
- * Allows other apps to query RustDesk information
+ * Allows other apps to query Cleverty Remote information
  *
  * Usage from other app:
- *   val uri = Uri.parse("content://com.carriez.flutter_hbb.provider/id")
+ *   val uri = Uri.parse("content://href.cleverty.remote.provider/id")
  *   val cursor = contentResolver.query(uri, null, null, null, null)
  *   cursor?.use {
  *       if (it.moveToFirst()) {
@@ -22,14 +22,14 @@ import android.util.Log
  *   }
  *
  * Or via ADB:
- *   adb shell content query --uri content://com.carriez.flutter_hbb.provider/id
- *   adb shell content query --uri content://com.carriez.flutter_hbb.provider/status
+ *   adb shell content query --uri content://href.cleverty.remote.provider/id
+ *   adb shell content query --uri content://href.cleverty.remote.provider/status
  */
 class EnterpriseContentProvider : ContentProvider() {
 
     companion object {
         private const val TAG = "EnterpriseProvider"
-        const val AUTHORITY = "com.carriez.flutter_hbb.provider"
+        const val AUTHORITY = "href.cleverty.remote.provider"
 
         private const val CODE_ID = 1
         private const val CODE_STATUS = 2
@@ -57,7 +57,7 @@ class EnterpriseContentProvider : ContentProvider() {
         return when (uriMatcher.match(uri)) {
             CODE_ID -> {
                 val cursor = MatrixCursor(arrayOf("id", "timestamp"))
-                val id = getRustDeskId()
+                val id = getCleverty RemoteId()
                 cursor.addRow(arrayOf(id, System.currentTimeMillis()))
                 cursor
             }
@@ -66,7 +66,7 @@ class EnterpriseContentProvider : ContentProvider() {
                 val serviceRunning = MainService.isReady || MainService.isStart
                 val mediaReady = MainService.isReady
                 val inputReady = InputService.isOpen
-                val id = getRustDeskId()
+                val id = getCleverty RemoteId()
                 cursor.addRow(arrayOf(
                     if (serviceRunning) 1 else 0,
                     if (mediaReady) 1 else 0,
@@ -80,15 +80,15 @@ class EnterpriseContentProvider : ContentProvider() {
                 cursor.addRow(arrayOf("rendezvous_server", ffi.FFI.getLocalOption("custom-rendezvous-server")))
                 cursor.addRow(arrayOf("relay_server", ffi.FFI.getLocalOption("relay-server")))
                 cursor.addRow(arrayOf("api_server", ffi.FFI.getLocalOption("api-server")))
-                cursor.addRow(arrayOf("id", getRustDeskId()))
+                cursor.addRow(arrayOf("id", getCleverty RemoteId()))
                 cursor
             }
             else -> null
         }
     }
 
-    private fun getRustDeskId(): String {
-        return EnterpriseConfig.getRustDeskId()
+    private fun getCleverty RemoteId(): String {
+        return EnterpriseConfig.getCleverty RemoteId()
     }
 
     override fun getType(uri: Uri): String? {

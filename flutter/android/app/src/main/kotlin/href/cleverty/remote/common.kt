@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package href.cleverty.remote
 
 import android.Manifest.permission.*
 import android.annotation.SuppressLint

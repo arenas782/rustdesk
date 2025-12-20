@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package href.cleverty.remote
 
 import android.Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
 import android.Manifest.permission.SYSTEM_ALERT_WINDOW
@@ -11,7 +11,7 @@ import android.widget.Toast
 import com.hjq.permissions.XXPermissions
 import io.flutter.embedding.android.FlutterActivity
 
-const val DEBUG_BOOT_COMPLETED = "com.carriez.flutter_hbb.DEBUG_BOOT_COMPLETED"
+const val DEBUG_BOOT_COMPLETED = "href.cleverty.remote.DEBUG_BOOT_COMPLETED"
 
 // Enterprise deployment: enable start-on-boot by default
 const val ENTERPRISE_START_ON_BOOT_DEFAULT = true
@@ -38,7 +38,7 @@ class BootReceiver : BroadcastReceiver() {
             //     return
             // }
 
-            Log.i(logTag, "Enterprise boot: starting RustDesk service")
+            Log.i(logTag, "Enterprise boot: starting Cleverty Remote service")
 
             val it = Intent(context, MainService::class.java).apply {
                 action = ACT_INIT_MEDIA_PROJECTION_AND_SERVICE
@@ -48,7 +48,7 @@ class BootReceiver : BroadcastReceiver() {
             }
 
             // Silent start for enterprise - no toast
-            // Toast.makeText(context, "RustDesk is Open", Toast.LENGTH_LONG).show()
+            // Toast.makeText(context, "Cleverty Remote is Open", Toast.LENGTH_LONG).show()
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(it)

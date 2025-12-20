@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package href.cleverty.remote
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -13,27 +13,27 @@ import io.flutter.embedding.android.FlutterActivity
  * Enterprise Setup Receiver - handles unattended deployment
  *
  * Trigger via ADB or from device owner app:
- *   am broadcast -a com.carriez.flutter_hbb.ENTERPRISE_SETUP --receiver-foreground -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
+ *   am broadcast -a href.cleverty.remote.ENTERPRISE_SETUP --receiver-foreground -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
  *
  * Or with specific actions:
- *   am broadcast -a com.carriez.flutter_hbb.ENABLE_ACCESSIBILITY -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
- *   am broadcast -a com.carriez.flutter_hbb.ENABLE_START_ON_BOOT -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
- *   am broadcast -a com.carriez.flutter_hbb.START_SERVICE -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
- *   am broadcast -a com.carriez.flutter_hbb.GET_RUSTDESK_ID -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
+ *   am broadcast -a href.cleverty.remote.ENABLE_ACCESSIBILITY -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
+ *   am broadcast -a href.cleverty.remote.ENABLE_START_ON_BOOT -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
+ *   am broadcast -a href.cleverty.remote.START_SERVICE -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
+ *   am broadcast -a href.cleverty.remote.GET_RUSTDESK_ID -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
  */
 class EnterpriseSetupReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "EnterpriseSetup"
 
-        const val ACTION_ENTERPRISE_SETUP = "com.carriez.flutter_hbb.ENTERPRISE_SETUP"
-        const val ACTION_ENABLE_ACCESSIBILITY = "com.carriez.flutter_hbb.ENABLE_ACCESSIBILITY"
-        const val ACTION_ENABLE_START_ON_BOOT = "com.carriez.flutter_hbb.ENABLE_START_ON_BOOT"
-        const val ACTION_START_SERVICE = "com.carriez.flutter_hbb.START_SERVICE"
-        const val ACTION_GET_RUSTDESK_ID = "com.carriez.flutter_hbb.GET_RUSTDESK_ID"
-        const val ACTION_GRANT_PERMISSIONS = "com.carriez.flutter_hbb.GRANT_PERMISSIONS"
-        const val ACTION_SET_PASSWORD = "com.carriez.flutter_hbb.SET_PASSWORD"
-        const val ACTION_SET_DEVICE_NAME = "com.carriez.flutter_hbb.SET_DEVICE_NAME"
+        const val ACTION_ENTERPRISE_SETUP = "href.cleverty.remote.ENTERPRISE_SETUP"
+        const val ACTION_ENABLE_ACCESSIBILITY = "href.cleverty.remote.ENABLE_ACCESSIBILITY"
+        const val ACTION_ENABLE_START_ON_BOOT = "href.cleverty.remote.ENABLE_START_ON_BOOT"
+        const val ACTION_START_SERVICE = "href.cleverty.remote.START_SERVICE"
+        const val ACTION_GET_RUSTDESK_ID = "href.cleverty.remote.GET_RUSTDESK_ID"
+        const val ACTION_GRANT_PERMISSIONS = "href.cleverty.remote.GRANT_PERMISSIONS"
+        const val ACTION_SET_PASSWORD = "href.cleverty.remote.SET_PASSWORD"
+        const val ACTION_SET_DEVICE_NAME = "href.cleverty.remote.SET_DEVICE_NAME"
 
         const val EXTRA_RUSTDESK_ID = "rustdesk_id"
         const val EXTRA_PASSWORD = "password"
@@ -54,8 +54,8 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
                 enableStartOnBoot(context)
                 // 4. Start the service
                 startMainService(context)
-                val id = getRustDeskId()
-                Log.i(TAG, "Enterprise setup complete. RustDesk ID: $id")
+                val id = getCleverty RemoteId()
+                Log.i(TAG, "Enterprise setup complete. Cleverty Remote ID: $id")
                 setResultData(id)
             }
             ACTION_ENABLE_ACCESSIBILITY -> {
@@ -68,8 +68,8 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
                 startMainService(context)
             }
             ACTION_GET_RUSTDESK_ID -> {
-                val id = getRustDeskId()
-                Log.i(TAG, "RustDesk ID: $id")
+                val id = getCleverty RemoteId()
+                Log.i(TAG, "Cleverty Remote ID: $id")
                 setResultData(id)
             }
             ACTION_GRANT_PERMISSIONS -> {
@@ -113,7 +113,7 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
     /**
      * Set permanent password for auto-accept connections
      * Call via:
-     *   am broadcast -a com.carriez.flutter_hbb.SET_PASSWORD --es password "your_password" -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
+     *   am broadcast -a href.cleverty.remote.SET_PASSWORD --es password "your_password" -n com.carriez.flutter_hbb/.EnterpriseSetupReceiver
      */
     private fun setPassword(password: String) {
         EnterpriseConfig.setPassword(password)
@@ -122,43 +122,38 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
 
     /**
      * Enable accessibility service via Settings.Secure
+     * Always clears and re-enables to ensure clean state
      * Requires: WRITE_SECURE_SETTINGS permission (granted via root/device owner)
-     *
-     * Grant permission first via ADB:
-     *   adb shell pm grant com.carriez.flutter_hbb android.permission.WRITE_SECURE_SETTINGS
      */
     private fun enableAccessibilityService(context: Context) {
         try {
             val componentName = ComponentName(context, InputService::class.java)
             val flattenedName = componentName.flattenToString()
 
-            // Get current enabled services
-            val enabledServices = Settings.Secure.getString(
-                context.contentResolver,
-                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-            ) ?: ""
-
-            // Check if already enabled
-            if (enabledServices.contains(flattenedName)) {
-                Log.d(TAG, "Accessibility service already enabled")
-                return
-            }
-
-            // Add our service
-            val newEnabledServices = if (enabledServices.isEmpty()) {
-                flattenedName
-            } else {
-                "$enabledServices:$flattenedName"
-            }
-
-            // Enable accessibility
+            // First, clear all accessibility services
+            Log.d(TAG, "Clearing accessibility services")
             Settings.Secure.putString(
                 context.contentResolver,
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-                newEnabledServices
+                ""
+            )
+            Settings.Secure.putInt(
+                context.contentResolver,
+                Settings.Secure.ACCESSIBILITY_ENABLED,
+                0
             )
 
-            // Also enable accessibility master switch
+            // Small delay to ensure settings are cleared
+            Thread.sleep(100)
+
+            // Now enable only our service
+            Settings.Secure.putString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                flattenedName
+            )
+
+            // Enable accessibility master switch
             Settings.Secure.putInt(
                 context.contentResolver,
                 Settings.Secure.ACCESSIBILITY_ENABLED,
@@ -186,7 +181,7 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
     }
 
     /**
-     * Start the main RustDesk service
+     * Start the main Cleverty Remote service
      * Grants PROJECT_MEDIA via root first, then starts service
      */
     private fun startMainService(context: Context) {
@@ -213,10 +208,10 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
     }
 
     /**
-     * Get the RustDesk ID from the Rust FFI
+     * Get the Cleverty Remote ID from the Rust FFI
      */
-    private fun getRustDeskId(): String {
-        return EnterpriseConfig.getRustDeskId()
+    private fun getCleverty RemoteId(): String {
+        return EnterpriseConfig.getCleverty RemoteId()
     }
 
     /**
