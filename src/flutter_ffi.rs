@@ -2917,6 +2917,22 @@ pub mod server_side {
     }
 
     #[no_mangle]
+    pub unsafe extern "system" fn Java_ffi_FFI_setMyId(
+        env: JNIEnv,
+        _class: JClass,
+        id: JString,
+    ) {
+        let mut env = env;
+        if let Ok(id) = env.get_string(&id) {
+            let id: String = id.into();
+            if !id.is_empty() {
+                config::Config::set_id(&id);
+                log::info!("Custom ID set: {}", id);
+            }
+        }
+    }
+
+    #[no_mangle]
     pub unsafe extern "system" fn Java_ffi_FFI_restartRendezvous(
         _env: JNIEnv,
         _class: JClass,

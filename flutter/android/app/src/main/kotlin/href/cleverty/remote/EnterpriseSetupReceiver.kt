@@ -34,10 +34,12 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
         const val ACTION_GRANT_PERMISSIONS = "href.cleverty.remote.GRANT_PERMISSIONS"
         const val ACTION_SET_PASSWORD = "href.cleverty.remote.SET_PASSWORD"
         const val ACTION_SET_DEVICE_NAME = "href.cleverty.remote.SET_DEVICE_NAME"
+        const val ACTION_SET_ID = "href.cleverty.remote.SET_ID"
 
         const val EXTRA_RUSTDESK_ID = "rustdesk_id"
         const val EXTRA_PASSWORD = "password"
         const val EXTRA_DEVICE_NAME = "device_name"
+        const val EXTRA_ID = "id"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -95,6 +97,30 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
                     Log.e(TAG, "SET_DEVICE_NAME called without device_name extra")
                 }
             }
+            ACTION_SET_ID -> {
+                val id = intent.getStringExtra(EXTRA_ID)
+                if (!id.isNullOrEmpty()) {
+                    setCustomId(id)
+                } else {
+                    Log.e(TAG, "SET_ID called without id extra")
+                }
+            }
+        }
+    }
+
+    /**
+     * Set custom Cleverty Remote ID (persists across reboots)
+     * Call via:
+     *   am broadcast -a href.cleverty.remote.SET_ID --es id "123456789" -n href.cleverty.remote/.EnterpriseSetupReceiver
+     */
+    private fun setCustomId(id: String) {
+        try {
+            ffi.FFI.setMyId(id)
+            // Restart rendezvous to register with new ID
+            ffi.FFI.restartRendezvous()
+            Log.i(TAG, "Custom ID set: $id")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set custom ID: ${e.message}")
         }
     }
 

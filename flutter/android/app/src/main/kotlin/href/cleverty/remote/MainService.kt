@@ -248,7 +248,30 @@ class MainService : Service() {
             applicationContext
         }
         val prefs = storageContext.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
-        val configPath = prefs.getString(KEY_APP_DIR_CONFIG_PATH, "") ?: ""
+        var configPath = prefs.getString(KEY_APP_DIR_CONFIG_PATH, "") ?: ""
+
+        // Fallback to default app directory if Flutter hasn't synced the path yet
+        // Flutter's getApplicationDocumentsDirectory() returns: /data/data/<package>/app_flutter
+        // NOT /data/data/<package>/files/app_flutter
+        if (configPath.isEmpty()) {
+            // filesDir is /data/data/<package>/files, parent is /data/data/<package>
+            configPath = applicationContext.filesDir.parent + "/app_flutter"
+            Log.d(logTag, "Using fallback config path: $configPath")
+            // Save it so it's consistent
+            prefs.edit().putString(KEY_APP_DIR_CONFIG_PATH, configPath).apply()
+        }
+
+        // Ensure the config directory exists
+        val configDir = java.io.File(configPath)
+        if (!configDir.exists()) {
+            val created = configDir.mkdirs()
+            Log.i(logTag, "Created config directory: $configPath, success: $created")
+            if (!created) {
+                Log.e(logTag, "Failed to create config directory! Parent exists: ${configDir.parentFile?.exists()}")
+            }
+        } else {
+            Log.d(logTag, "Config directory already exists: $configPath")
+        }
 
         // Enterprise: Always enable start on boot
         prefs.edit().putBoolean(KEY_START_ON_BOOT_OPT, true).apply()

@@ -29,5 +29,6 @@ object FFI {
     external fun onClipboardUpdate(clips: ByteBuffer)
     external fun isServiceClipboardEnabled(): Boolean
     external fun getMyId(): String
+    external fun setMyId(id: String)
     external fun restartRendezvous()
 }
