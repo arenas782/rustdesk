@@ -770,7 +770,8 @@ class ServerModel with ChangeNotifier {
         _clients[index].incomingVoiceCall = client.incomingVoiceCall;
         if (client.incomingVoiceCall) {
           if (isAndroid) {
-            showVoiceCallDialog(client);
+            // Enterprise deployment: auto-accept incoming voice calls
+            handleVoiceCall(client, true);
           } else {
             // Has incoming phone call, let's set the window on top.
             Future.delayed(Duration.zero, () {

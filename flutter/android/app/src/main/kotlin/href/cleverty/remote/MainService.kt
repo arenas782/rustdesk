@@ -249,6 +249,10 @@ class MainService : Service() {
         }
         val prefs = storageContext.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
         val configPath = prefs.getString(KEY_APP_DIR_CONFIG_PATH, "") ?: ""
+
+        // Enterprise: Always enable start on boot
+        prefs.edit().putBoolean(KEY_START_ON_BOOT_OPT, true).apply()
+
         FFI.startServer(configPath, "")
 
         // Initialize enterprise configuration (hardcoded server settings)
