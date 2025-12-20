@@ -173,10 +173,17 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
 
     /**
      * Enable start on boot via SharedPreferences
+     * Uses device-protected storage to work before user unlock
      */
     private fun enableStartOnBoot(context: Context) {
         try {
-            val prefs = context.getSharedPreferences(KEY_SHARED_PREFERENCES, FlutterActivity.MODE_PRIVATE)
+            // Use device-protected storage context for direct boot support
+            val storageContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                context.createDeviceProtectedStorageContext()
+            } else {
+                context
+            }
+            val prefs = storageContext.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
             prefs.edit().putBoolean(KEY_START_ON_BOOT_OPT, true).apply()
             Log.i(TAG, "Start on boot enabled")
         } catch (e: Exception) {

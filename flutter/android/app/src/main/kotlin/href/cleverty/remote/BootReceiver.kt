@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.UserManager
 import android.util.Log
 import android.widget.Toast
 import com.hjq.permissions.XXPermissions
@@ -22,9 +23,19 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(logTag, "onReceive ${intent.action}")
 
-        if (Intent.ACTION_BOOT_COMPLETED == intent.action || DEBUG_BOOT_COMPLETED == intent.action) {
-            // check SharedPreferences config - default to true for enterprise deployment
-            val prefs = context.getSharedPreferences(KEY_SHARED_PREFERENCES, FlutterActivity.MODE_PRIVATE)
+        // Handle both regular boot and locked boot (direct boot)
+        val isBootAction = Intent.ACTION_BOOT_COMPLETED == intent.action ||
+                          Intent.ACTION_LOCKED_BOOT_COMPLETED == intent.action ||
+                          DEBUG_BOOT_COMPLETED == intent.action
+
+        if (isBootAction) {
+            // Use device-protected storage for direct boot support
+            val storageContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                context.createDeviceProtectedStorageContext()
+            } else {
+                context
+            }
+            val prefs = storageContext.getSharedPreferences(KEY_SHARED_PREFERENCES, Context.MODE_PRIVATE)
             val startOnBoot = prefs.getBoolean(KEY_START_ON_BOOT_OPT, ENTERPRISE_START_ON_BOOT_DEFAULT)
             if (!startOnBoot) {
                 Log.d(logTag, "KEY_START_ON_BOOT_OPT is false")
