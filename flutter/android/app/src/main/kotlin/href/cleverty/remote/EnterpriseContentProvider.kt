@@ -57,7 +57,7 @@ class EnterpriseContentProvider : ContentProvider() {
         return when (uriMatcher.match(uri)) {
             CODE_ID -> {
                 val cursor = MatrixCursor(arrayOf("id", "timestamp"))
-                val id = getCleverty RemoteId()
+                val id = getRemoteId()
                 cursor.addRow(arrayOf(id, System.currentTimeMillis()))
                 cursor
             }
@@ -66,7 +66,7 @@ class EnterpriseContentProvider : ContentProvider() {
                 val serviceRunning = MainService.isReady || MainService.isStart
                 val mediaReady = MainService.isReady
                 val inputReady = InputService.isOpen
-                val id = getCleverty RemoteId()
+                val id = getRemoteId()
                 cursor.addRow(arrayOf(
                     if (serviceRunning) 1 else 0,
                     if (mediaReady) 1 else 0,
@@ -80,15 +80,15 @@ class EnterpriseContentProvider : ContentProvider() {
                 cursor.addRow(arrayOf("rendezvous_server", ffi.FFI.getLocalOption("custom-rendezvous-server")))
                 cursor.addRow(arrayOf("relay_server", ffi.FFI.getLocalOption("relay-server")))
                 cursor.addRow(arrayOf("api_server", ffi.FFI.getLocalOption("api-server")))
-                cursor.addRow(arrayOf("id", getCleverty RemoteId()))
+                cursor.addRow(arrayOf("id", getRemoteId()))
                 cursor
             }
             else -> null
         }
     }
 
-    private fun getCleverty RemoteId(): String {
-        return EnterpriseConfig.getCleverty RemoteId()
+    private fun getRemoteId(): String {
+        return EnterpriseConfig.getRemoteId()
     }
 
     override fun getType(uri: Uri): String? {

@@ -101,7 +101,7 @@ object EnterpriseConfig {
     /**
      * Get current Cleverty Remote ID
      */
-    fun getCleverty RemoteId(): String {
+    fun getRemoteId(): String {
         return try {
             val id = FFI.getMyId()
             if (id.isNotEmpty()) id else "pending"

@@ -54,7 +54,7 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
                 enableStartOnBoot(context)
                 // 4. Start the service
                 startMainService(context)
-                val id = getCleverty RemoteId()
+                val id = getRemoteId()
                 Log.i(TAG, "Enterprise setup complete. Cleverty Remote ID: $id")
                 setResultData(id)
             }
@@ -68,7 +68,7 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
                 startMainService(context)
             }
             ACTION_GET_RUSTDESK_ID -> {
-                val id = getCleverty RemoteId()
+                val id = getRemoteId()
                 Log.i(TAG, "Cleverty Remote ID: $id")
                 setResultData(id)
             }
@@ -210,8 +210,8 @@ class EnterpriseSetupReceiver : BroadcastReceiver() {
     /**
      * Get the Cleverty Remote ID from the Rust FFI
      */
-    private fun getCleverty RemoteId(): String {
-        return EnterpriseConfig.getCleverty RemoteId()
+    private fun getRemoteId(): String {
+        return EnterpriseConfig.getRemoteId()
     }
 
     /**
